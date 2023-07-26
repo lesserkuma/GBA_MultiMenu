@@ -106,7 +106,7 @@ int main(void) {
 	page_total = (roms_total + 8.0 - 1) / 8.0;
 
 	memcpy(&sFlashStatus, (void *)(AGB_ROM + flash_status_sector_offset * flash_sector_size), sizeof(sFlashStatus));
-	if ((sFlashStatus.magic != MAGIC_FLASH_STATUS) || (sFlashStatus.last_boot_menu_index > roms_total)) {
+	if ((sFlashStatus.magic != MAGIC_FLASH_STATUS) || (sFlashStatus.last_boot_menu_index >= roms_total)) {
 		sFlashStatus.magic = MAGIC_FLASH_STATUS;
 		sFlashStatus.version = 0;
 		sFlashStatus.battery_present = 1;

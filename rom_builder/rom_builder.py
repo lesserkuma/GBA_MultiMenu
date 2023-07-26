@@ -5,7 +5,7 @@
 import sys, os, glob, json, math, re, struct, hashlib, argparse, datetime
 
 # Configuration
-app_version = "0.1"
+app_version = "0.2"
 default_file = "LK_MULTIMENU_<CODE>.gba"
 
 ################################
@@ -132,11 +132,12 @@ UpdateSectorMap(start=item_list_offset, length=1, c="i")
 status_offset = item_list_offset + 1
 UpdateSectorMap(start=status_offset, length=1, c="c")
 if battery_present:
-	status = bytearray([0x4B, 0x55, 0x4D, 0x41, 0x00, 0x01, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00])
+	status = bytearray([0x4B, 0x55, 0x4D, 0x41, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00])
 else:
-	status = bytearray([0x4B, 0x55, 0x4D, 0x41, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00])
+	status = bytearray([0x4B, 0x55, 0x4D, 0x41, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00])
 compilation[status_offset * sector_size:status_offset * sector_size + len(status)] = status
 save_data_sector_offset = status_offset + 1
+boot_logo_found = hashlib.sha1(compilation[0x04:0xA0]).digest() == bytearray([ 0x17, 0xDA, 0xA0, 0xFE, 0xC0, 0x2F, 0xC3, 0x3C, 0x0F, 0x6A, 0xBB, 0x54, 0x9A, 0x8B, 0x80, 0xB6, 0x61, 0x3B, 0x48, 0xEE ])
 
 # Read game ROMs and import save data
 saves_read = []
@@ -201,7 +202,6 @@ for game in games:
 
 # Read ROM data
 games.sort(key=lambda game: game["size"], reverse=True)
-boot_logo_found = False
 c = 0
 for game in games:
 	found = False
@@ -307,7 +307,3 @@ if not args.no_log:
 	log += "\n################################\n\n"
 	with open("log.txt", "ab") as f: f.write(log.encode("UTF-8-SIG"))
 if not args.no_wait: input("\nPress ENTER to exit.\n")
-
-# Debug
-#with open("output_menu.gba", "wb") as f: f.write(compilation[:save_data_sector_offset * sector_size])
-#with open("output_menu+save.gba", "wb") as f: f.write(compilation[:save_end_offset * sector_size])
