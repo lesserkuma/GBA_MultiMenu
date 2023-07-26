@@ -34,8 +34,6 @@ In the `games` section, you can edit the game-related stuff:
 		"title_font": 1,
 		"save_slot": 1
 	},
-	...
-]
 ```
 - `enabled` can be set to `true` or `false`. If this option is set, the game entry will be skipped by the ROM Builder.
 - `file` is the ROM's file name within the **roms** folder, including file extension.
