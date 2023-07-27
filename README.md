@@ -79,3 +79,7 @@ ROM and save data can be written and read using a [GBxCart RW v1.4+](https://www
 
 ## Thanks
 Thanks to FraX, Ausar, liuyunx
+
+## Screenshots
+
+<img src="https://raw.githubusercontent.com/lesserkuma/GBA_MultiMenu/master/.github/screen.png" alt="" />
