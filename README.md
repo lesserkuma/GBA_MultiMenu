@@ -75,7 +75,7 @@ Tested repro cartridges:
 - 100BS6600_48BALL_V4 with 6600M0U0BE
 - 100SOP with MSP55LV100S
 
-ROM and save data can be written and read using a [GBxCart RW v1.4+](https://www.gbxcart.com/) device by insideGadgets and the [FlashGBX](https://github.com/lesserkuma/FlashGBX) software.
+The generated compilation ROM can be written and read using a [GBxCart RW v1.4+](https://www.gbxcart.com/) device by insideGadgets and the [FlashGBX](https://github.com/lesserkuma/FlashGBX) software.
 
 ## Thanks
 Thanks to FraX, Ausar, liuyunx
