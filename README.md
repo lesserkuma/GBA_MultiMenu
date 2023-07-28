@@ -78,7 +78,7 @@ Tested repro cartridges:
 The generated compilation ROM can be written and read using a [GBxCart RW v1.4+](https://www.gbxcart.com/) device by insideGadgets and the [FlashGBX](https://github.com/lesserkuma/FlashGBX) software.
 
 ## Thanks
-Thanks to FraX, Ausar, liuyunx
+Thanks to FraX, Ausar, liuyunx, BennVenn
 
 ## Screenshots
 
