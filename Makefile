@@ -179,6 +179,7 @@ soundbank.bin soundbank.h : $(AUDIOFILES)
 
 #replacement rule for gbafix
 #---------------------------------------------------------------------------------
+$(shell touch $(CURDIR)/../$(SOURCES)/version.h)
 %.gba: %.elf
 	@$(OBJCOPY) -O binary $< $@
 	@gbafix $@ "-tLK MULTIMENU" "-cAGBJ" "-mLK" "-r0"

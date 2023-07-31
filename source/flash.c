@@ -216,16 +216,20 @@ IWRAM_CODE u8 BootGame(ItemConfig config, FlashStatus status)
 		return 1;
 
 	// Temporarily store SRAM values at mapper registers
-	sram_register_backup[0] = *(vu8 *)MAPPER_CONFIG1;
-	sram_register_backup[1] = *(vu8 *)MAPPER_CONFIG2;
-	sram_register_backup[2] = *(vu8 *)MAPPER_CONFIG3;
-	sram_register_backup[3] = *(vu8 *)MAPPER_CONFIG4;
+	if (status.last_boot_save_type == SRAM_NONE)
+	{
+		sram_register_backup[0] = *(vu8 *)MAPPER_CONFIG1;
+		sram_register_backup[1] = *(vu8 *)MAPPER_CONFIG2;
+		sram_register_backup[2] = *(vu8 *)MAPPER_CONFIG3;
+		sram_register_backup[3] = *(vu8 *)MAPPER_CONFIG4;
+	}
 
 	// Enable SRAM access
 	*(vu8 *)MAPPER_CONFIG4 = 1;
 
 	// Write previous SRAM to flash
-	if (status.battery_present) {
+	if (status.battery_present)
+	{
 		if (status.last_boot_save_type != SRAM_NONE)
 		{
 			for (int i = 0; i < SRAM_SIZE; i++)
@@ -279,7 +283,7 @@ IWRAM_CODE u8 BootGame(ItemConfig config, FlashStatus status)
 	*(vu8 *)MAPPER_CONFIG3 = 0x40 - config.rom_size;				  // accessible ROM size (in 512 KB blocks)
 
 	// Wait until menu ROM is no longer visible
-	u16 timeout = 0xFFFF;
+	u32 timeout = 0x2FFF;
 	while (((vu16 *)AGB_ROM)[0x58] == 0x4B4C)
 	{
 		if (!timeout--)
@@ -294,16 +298,20 @@ IWRAM_CODE u8 BootGame(ItemConfig config, FlashStatus status)
 	// Lock mapper
 	*(vu8 *)MAPPER_CONFIG2 |= 0x80;
 
-	// Restore SRAM values at mapper registers
-	*(vu8 *)MAPPER_CONFIG1 = sram_register_backup[0];
-	*(vu8 *)MAPPER_CONFIG2 = sram_register_backup[1];
-	*(vu8 *)MAPPER_CONFIG3 = sram_register_backup[2];
-	*(vu8 *)MAPPER_CONFIG4 = sram_register_backup[3];
-
 	// Write buffer to SRAM
-	for (int i = 0; i < SRAM_SIZE; i++)
+	if (config.save_type != SRAM_NONE)
 	{
-		((vu8 *)AGB_SRAM)[i] = data_buffer[i];
+		for (int i = 0; i < SRAM_SIZE; i++)
+		{
+			((vu8 *)AGB_SRAM)[i] = data_buffer[i];
+		}
+	}
+	else
+	{
+		*(vu8 *)MAPPER_CONFIG1 = sram_register_backup[0];
+		*(vu8 *)MAPPER_CONFIG2 = sram_register_backup[1];
+		*(vu8 *)MAPPER_CONFIG3 = sram_register_backup[2];
+		*(vu8 *)MAPPER_CONFIG4 = sram_register_backup[3];
 	}
 
 	// Clear palette
@@ -313,7 +321,7 @@ IWRAM_CODE u8 BootGame(ItemConfig config, FlashStatus status)
 	}
 	REG_BLDY = 0;
 
-	// Soft Reset system call
+	// Boot ROM
 	__asm("swi 0"); // Soft reset
 
 	return 3;

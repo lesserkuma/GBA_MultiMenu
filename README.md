@@ -46,6 +46,7 @@ In the `games` section, you can edit the game-related stuff:
   - `5` = Nintendo DSi IPL font (KOR)
   - `6` = Pokémon Black & White condensed battle font
 - `save_slot` defines which save slot your game uses. Set it to `null` for no saving or a number starting from `1`. Multiple games can share a save slot.
+- `map_256m`, if set to `true`, can serve as a workaround for a glitch with the cartridge mapper that causes games to freeze with screeching noises upon launch.
 
 ### ROM Builder Command Line Arguments
 

@@ -14,6 +14,7 @@ Author: Lesserkuma (github.com/lesserkuma)
 #include <string.h>
 #include <unistd.h>
 
+#include "version.h"
 #include "main.h"
 #include "font.h"
 #include "flash.h"
@@ -186,14 +187,10 @@ int main(void) {
 				}
 			} else if (show_credits) {
 				LoadFont(0);
-				#ifdef __TIMESTAMP_ISO__
-					memset(temp_unicode, 0, sizeof(temp_unicode));
-					snprintf(temp_ascii, 48, "Menu by LK - %s", __TIMESTAMP_ISO__);
-					AsciiToUnicode(temp_ascii, temp_unicode);
-					DrawText(6, SCREEN_HEIGHT - sFontSpecs.max_height - 3 - FontMarginBottom, ALIGN_LEFT, temp_unicode, 48, font, (void*)AGB_VRAM+0xA000, FALSE);
-				#else
-					DrawText(6, SCREEN_HEIGHT - sFontSpecs.max_height - 3 - FontMarginBottom, ALIGN_LEFT, u"Menu by LK", 48, font, (void*)AGB_VRAM+0xA000, FALSE);
-				#endif
+				memset(temp_unicode, 0, sizeof(temp_unicode));
+				snprintf(temp_ascii, 48, "Menu by LK - %s", BUILDTIME);
+				AsciiToUnicode(temp_ascii, temp_unicode);
+				DrawText(6, SCREEN_HEIGHT - sFontSpecs.max_height - 3 - FontMarginBottom, ALIGN_LEFT, temp_unicode, 48, font, (void*)AGB_VRAM+0xA000, FALSE);
 			} else if (show_debug) {
 				LoadFont(0);
 				u8 a = ((sItemConfig.rom_offset / 0x40) & 0xF) << 4;

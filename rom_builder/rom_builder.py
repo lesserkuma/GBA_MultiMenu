@@ -5,7 +5,7 @@
 import sys, os, glob, json, math, re, struct, hashlib, argparse, datetime
 
 # Configuration
-app_version = "0.2"
+app_version = "0.3"
 default_file = "LK_MULTIMENU_<CODE>.gba"
 
 ################################
@@ -39,12 +39,14 @@ def logp(*args, **kwargs):
 ################################
 
 cartridge_types = [
-	{ # "MSP55LV100S
+	{
+		"name":"MSP55LV100S",
 		"flash_size":0x4000000,
 		"sector_size":0x20000,
 		"block_size":0x80000,
 	},
-	{ # 6600M0U0BE
+	{
+		"name":"6600M0U0BE",
 		"flash_size":0x10000000,
 		"sector_size":0x40000,
 		"block_size":0x80000,
@@ -64,11 +66,11 @@ parser.add_argument("--output", type=str, default=default_file, help="sets the f
 args = parser.parse_args()
 output_file = args.output
 if output_file == "lk_multimenu.gba":
-	logp("Error: The file must not be named lk_multimenu.gba")
+	logp("Error: The file must not be named “lk_multimenu.gba”")
 	if not args.no_wait: input("\nPress ENTER to exit.\n")
 	sys.exit(1)
 if not os.path.exists("lk_multimenu.gba"):
-	logp("Error: The Menu ROM is missing.\nPlease put it in the same directory that you are running this tool from.\nExpected file name: \"lk_multimenu.gba\"")
+	logp("Error: The Menu ROM is missing.\nPlease put it in the same directory that you are running this tool from.\nExpected file name: “lk_multimenu.gba”")
 	if not args.no_wait: input("\nPress ENTER to exit.\n")
 	sys.exit()
 
@@ -97,11 +99,22 @@ if not os.path.exists(args.config):
 		},
 		"games": games,
 	}
-	with open(args.config, "w", encoding="UTF-8-SIG") as f:
-		f.write(json.dumps(obj=obj, indent=4, ensure_ascii=False))
+	if len(games) == 0:
+		logp("Error: No usable ROM files were found in the “roms” folder.")
+	else:
+		with open(args.config, "w", encoding="UTF-8-SIG") as f:
+			f.write(json.dumps(obj=obj, indent=4, ensure_ascii=False))
+		logp(f"A new configuration file ({args.config:s}) was created based on the files inside the “roms” folder.\nPlease edit the file to your liking in a text editor, then run this tool again.")
+	if not args.no_wait: input("\nPress ENTER to exit.\n")
+	sys.exit()
 else:
 	with open(args.config, "r", encoding="UTF-8-SIG") as f:
-		j = json.load(f)
+		try:
+			j = json.load(f)
+		except json.decoder.JSONDecodeError as e:
+			logp(f"Error: The configuration file ({args.config:s}) is malformed and could not be loaded.\n" + str(e))
+			if not args.no_wait: input("\nPress ENTER to exit.\n")
+			sys.exit()
 		games = j["games"]
 		cartridge_type = j["cartridge"]["type"] - 1
 		battery_present = j["cartridge"]["battery_present"]
@@ -128,7 +141,7 @@ UpdateSectorMap(start=0, length=math.ceil(len(menu_rom) / sector_size), c="m")
 item_list_offset = len(menu_rom)
 item_list_offset = 0x40000 - (item_list_offset % 0x40000) + item_list_offset
 item_list_offset = math.ceil(item_list_offset / sector_size)
-UpdateSectorMap(start=item_list_offset, length=1, c="i")
+UpdateSectorMap(start=item_list_offset, length=1, c="l")
 status_offset = item_list_offset + 1
 UpdateSectorMap(start=status_offset, length=1, c="c")
 if battery_present:
@@ -191,7 +204,7 @@ else:
 
 games = [game for game in games if not ("missing" in game and game["missing"])]
 if len(games) == 0:
-	logp("No ROMs found")
+	logp(f"No ROMs found. Delete the “{args.config:s}” file to reset your configuration.")
 	sys.exit()
 
 # Add index
@@ -206,14 +219,20 @@ c = 0
 for game in games:
 	found = False
 	for i in range(save_end_offset, len(sector_map)):
-		if i % game["sector_count"] == 0:
+		sector_count_map = game["sector_count"]
+		
+		if "map_256m" in game and game["map_256m"] == True:
+			# Map as 256M ROM, but don't waste space; some games may need this for unknown reasons
+			sector_count_map = (32 * 1024 * 1024) // sector_size
+		
+		if i % sector_count_map == 0:
 			if sector_map[i:i + game["sector_count"]] == ["."] * game["sector_count"]:
 				UpdateSectorMap(i, game["sector_count"], "r")
 				with open(f"roms/{game['file']}", "rb") as f: rom = f.read()
 				compilation[i * sector_size:i * sector_size + len(rom)] = rom
 				game["sector_offset"] = i
 				game["block_offset"] = game["sector_offset"] * sector_size // block_size
-				game["block_count"] = game["sector_count"] * sector_size // block_size
+				game["block_count"] = sector_count_map * sector_size // block_size
 				found = True
 				
 				if not boot_logo_found and hashlib.sha1(rom[0x04:0xA0]).digest() == bytearray([ 0x17, 0xDA, 0xA0, 0xFE, 0xC0, 0x2F, 0xC3, 0x3C, 0x0F, 0x6A, 0xBB, 0x54, 0x9A, 0x8B, 0x80, 0xB6, 0x61, 0x3B, 0x48, 0xEE ]):
@@ -240,10 +259,10 @@ logp("{:.2f}% ({:d} of {:d} sectors) used\n".format(sectors_used / sector_count 
 logp(f"Added {len(games)} ROM(s) to the compilation\n")
 
 if battery_present:
-	logp     ("    | Offset    | Size      | Save Slot      | Title")
+	logp     ("    | Offset    | Map Size  | Save Slot      | Title")
 	toc_sep = "----+-----------+-----------+----------------+---------------------------------"
 else:
-	logp     ("    | Offset    | Size      | Title")
+	logp     ("    | Offset    | Map Size  | Title")
 	toc_sep = "----+-----------+-----------+--------------------------------------------------"
 
 item_list = bytearray()
@@ -259,12 +278,11 @@ for game in games:
 		if game['save_type'] > 0:
 			table_line += f"{game['save_slot']+1:2d} (0x{(save_data_sector_offset + game['save_slot']) * sector_size:07X}) | "
 		else:
-			table_line += "-------------- | "
+			table_line += "               | "
 	table_line += f"{title}"
 	if c % 8 == 0: logp(toc_sep)
 	logp(table_line)
 	c += 1
-	#logp(f"0x{game['block_offset'] * block_size:07X} |")
 	
 	title = title.ljust(0x30, "\0")
 	item_list += bytearray(struct.pack("B", game["title_font"]))
@@ -275,6 +293,7 @@ for game in games:
 	item_list += bytearray(struct.pack("B", game["save_slot"]))
 	item_list += bytearray([0] * 8)
 	item_list += bytearray(title.encode("UTF-16LE"))
+
 compilation[item_list_offset * sector_size:item_list_offset * sector_size + len(item_list)] = item_list
 rom_code = "L{:s}".format(hashlib.sha1(status + item_list).hexdigest()[:3]).upper()
 
@@ -287,8 +306,13 @@ for i in range(0xA0, 0xBD):
 checksum = (checksum - 0x19) & 0xFF
 compilation[0xBD] = checksum
 logp("")
-logp("Compilation ROM size: {:.2f} MiB".format(rom_size / 1024 / 1024))
-logp("ROM code: {:s}".format(rom_code))
+logp("Menu ROM:        0x{:07X}–0x{:07X}".format(0, len(menu_rom)))
+logp("Game List:       0x{:07X}–0x{:07X}".format(item_list_offset * sector_size, item_list_offset * sector_size + len(item_list)))
+logp("Status Area:     0x{:07X}–0x{:07X}".format(status_offset * sector_size, status_offset * sector_size + 0x1000))
+logp("")
+logp("Cartridge Type:  {:d} ({:s} {:s})".format(cartridge_type, cartridge_types[cartridge_type]["name"], "with battery" if battery_present else "without battery"))
+logp("Output ROM Size: {:.2f} MiB".format(rom_size / 1024 / 1024))
+logp("Output ROM Code: {:s}".format(rom_code))
 output_file = output_file.replace("<CODE>", rom_code)
 if args.split:
 	for i in range(0, math.ceil(flash_size / 0x2000000)):
