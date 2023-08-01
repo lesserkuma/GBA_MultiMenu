@@ -5,7 +5,7 @@
 import sys, os, glob, json, math, re, struct, hashlib, argparse, datetime
 
 # Configuration
-app_version = "0.3"
+app_version = "0.4"
 default_file = "LK_MULTIMENU_<CODE>.gba"
 
 ################################
@@ -84,13 +84,19 @@ if not os.path.exists(args.config):
 	cartridge_type = 1
 	battery_present = False
 	for file in files:
-		games.append({
+		d = {
 			"enabled": True,
 			"file": os.path.split(file)[1],
 			"title": os.path.splitext(os.path.split(file)[1])[0],
 			"title_font": 1,
 			"save_slot": save_slot,
-		})
+		}
+		with open(file, "rb") as f:
+			f.seek(0xAC)
+			code = f.read(0x4)
+			if code[:3] in (b"BPG", b"BPR"):
+				d["map_256m"] = True
+		games.append(d)
 		save_slot += 1
 	obj = {
 		"cartridge": {
