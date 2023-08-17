@@ -15,7 +15,6 @@ Author: Lesserkuma (github.com/lesserkuma)
     }
 
 #define MAGIC_FLASH_STATUS 0x414D554B
-#define FLASH_STATUS_LOCATION 0xA0000
 
 typedef struct __attribute__((packed)) FlashStatus_
 {

@@ -5,7 +5,7 @@
 import sys, os, glob, json, math, re, struct, hashlib, argparse, datetime
 
 # Configuration
-app_version = "0.4"
+app_version = "0.5"
 default_file = "LK_MULTIMENU_<CODE>.gba"
 
 ################################
@@ -316,7 +316,7 @@ logp("Menu ROM:        0x{:07X}–0x{:07X}".format(0, len(menu_rom)))
 logp("Game List:       0x{:07X}–0x{:07X}".format(item_list_offset * sector_size, item_list_offset * sector_size + len(item_list)))
 logp("Status Area:     0x{:07X}–0x{:07X}".format(status_offset * sector_size, status_offset * sector_size + 0x1000))
 logp("")
-logp("Cartridge Type:  {:d} ({:s} {:s})".format(cartridge_type, cartridge_types[cartridge_type]["name"], "with battery" if battery_present else "without battery"))
+logp("Cartridge Type:  {:d} ({:s}) {:s}".format(cartridge_type + 1, cartridge_types[cartridge_type]["name"], "with battery" if battery_present else "without battery"))
 logp("Output ROM Size: {:.2f} MiB".format(rom_size / 1024 / 1024))
 logp("Output ROM Code: {:s}".format(rom_code))
 output_file = output_file.replace("<CODE>", rom_code)
@@ -326,7 +326,7 @@ if args.split:
 		size = 0x2000000
 		if pos > len(compilation[:rom_size]): break
 		if pos + size > rom_size: size = rom_size - pos
-		output_file_part = "{:s}_part{:d}{:s}".format(os.path.splitext(output_file)[0], i + 1, os.path.splitext(output_file)[1])
+		output_file_part = "{:s}_part{:d}{:s}".format(os.path.splitext(output_file)[0], i, os.path.splitext(output_file)[1])
 		with open(output_file_part, "wb") as f: f.write(compilation[pos:pos+size])
 else:
 	with open(output_file, "wb") as f: f.write(compilation[:rom_size])

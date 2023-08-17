@@ -215,14 +215,11 @@ IWRAM_CODE u8 BootGame(ItemConfig config, FlashStatus status)
 	if (_flash_type == 0)
 		return 1;
 
-	// Temporarily store SRAM values at mapper registers
-	if (status.last_boot_save_type == SRAM_NONE)
-	{
-		sram_register_backup[0] = *(vu8 *)MAPPER_CONFIG1;
-		sram_register_backup[1] = *(vu8 *)MAPPER_CONFIG2;
-		sram_register_backup[2] = *(vu8 *)MAPPER_CONFIG3;
-		sram_register_backup[3] = *(vu8 *)MAPPER_CONFIG4;
-	}
+	// Temporarily store SRAM values located at mapper registers
+	sram_register_backup[0] = *(vu8 *)MAPPER_CONFIG1;
+	sram_register_backup[1] = *(vu8 *)MAPPER_CONFIG2;
+	sram_register_backup[2] = *(vu8 *)MAPPER_CONFIG3;
+	sram_register_backup[3] = *(vu8 *)MAPPER_CONFIG4;
 
 	// Enable SRAM access
 	*(vu8 *)MAPPER_CONFIG4 = 1;
