@@ -5,7 +5,7 @@
 import sys, os, glob, json, math, re, struct, hashlib, argparse, datetime
 
 # Configuration
-app_version = "0.5"
+app_version = "0.6"
 default_file = "LK_MULTIMENU_<CODE>.gba"
 
 ################################
@@ -172,6 +172,11 @@ for game in games:
 		x = 0x80000
 		while (x < size): x *= 2
 		size = x
+	if size < 0x400000:
+		with open(f"roms/{game['file']}", "rb") as f:
+			buffer = f.read()
+			if b"Batteryless mod by Lesserkuma" in buffer:
+				size = 0x400000
 	game["index"] = index
 	game["size"] = size
 	if "title_font" in game:
