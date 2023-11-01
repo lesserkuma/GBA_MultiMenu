@@ -15,7 +15,8 @@ The following section must be edited in order to specify the cartridge type to u
 ```json
 "cartridge": {
 	"type": 2,
-	"battery_present": false
+	"battery_present": false,
+	"min_rom_size": 4194304
 },
 ```
 Set `type` to `1` or `2`:
@@ -23,6 +24,8 @@ Set `type` to `1` or `2`:
 - `2` = 6600M0U0BE (e.g. 369IN1 2048M)
 
 Set `battery_present` to `true` or `false`. This will enable enhanced save data handling which will only be functional with a working battery.
+
+Set `min_rom_size` to whatever your cartridge supports as the smallest possible ROM size. Many newer cartridges only support ROMs no smaller than 4 MiB (`4194304`) while some older cartridges can go as low as 512 KiB (`524288`).
 
 In the `games` section, you can edit the game-related stuff:
 ```json

@@ -5,7 +5,7 @@
 import sys, os, glob, json, math, re, struct, hashlib, argparse, datetime
 
 # Configuration
-app_version = "0.6"
+app_version = "0.7"
 default_file = "LK_MULTIMENU_<CODE>.gba"
 
 ################################
@@ -83,6 +83,7 @@ if not os.path.exists(args.config):
 	games = []
 	cartridge_type = 1
 	battery_present = False
+	min_rom_size = 0x400000
 	for file in files:
 		d = {
 			"enabled": True,
@@ -102,6 +103,7 @@ if not os.path.exists(args.config):
 		"cartridge": {
 			"type": cartridge_type + 1,
 			"battery_present": battery_present,
+			"min_rom_size": min_rom_size,
 		},
 		"games": games,
 	}
@@ -124,6 +126,10 @@ else:
 		games = j["games"]
 		cartridge_type = j["cartridge"]["type"] - 1
 		battery_present = j["cartridge"]["battery_present"]
+		if "min_rom_size" in j["cartridge"]:
+			min_rom_size = j["cartridge"]["min_rom_size"]
+		else:
+			min_rom_size = 0x400000
 
 # Prepare compilation
 flash_size = cartridge_types[cartridge_type]["flash_size"]
@@ -176,7 +182,9 @@ for game in games:
 		with open(f"roms/{game['file']}", "rb") as f:
 			buffer = f.read()
 			if b"Batteryless mod by Lesserkuma" in buffer:
-				size = 0x400000
+				size = max(0x400000, min_rom_size)
+			else:
+				size = max(size, min_rom_size)
 	game["index"] = index
 	game["size"] = size
 	if "title_font" in game:
