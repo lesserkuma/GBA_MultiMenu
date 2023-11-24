@@ -66,6 +66,22 @@ IWRAM_CODE void FlashDetectType(void)
 		return;
 	}
 
+	// 1G cart with MSP54LV100S (Zelda Classic Collection 7-in-1)
+	_FLASH_WRITE(0, 0xF0);
+	_FLASH_WRITE(0xAAA, 0xA9);
+	_FLASH_WRITE(0x555, 0x56);
+	_FLASH_WRITE(0xAAA, 0x90);
+	data = *(vu32 *)AGB_ROM;
+	_FLASH_WRITE(0, 0xF0);
+	if (data == 0x227D0002)
+	{
+		REG_IE = ie;
+		flash_type = 3;
+		flash_sector_size = 0x20000;
+		FlashCalcOffsets();
+		return;
+	}
+
 	// Unknown type
 	REG_IE = ie;
 	flash_type = 0;
@@ -118,6 +134,24 @@ IWRAM_CODE void FlashEraseSector(u32 address)
 			}
 		}
 		_FLASH_WRITE(address, 0xF0F0);
+	}
+	else if (_flash_type == 3)
+	{
+		_FLASH_WRITE(0xAAA, 0xA9);
+		_FLASH_WRITE(0x555, 0x56);
+		_FLASH_WRITE(0xAAA, 0x80);
+		_FLASH_WRITE(0xAAA, 0xA9);
+		_FLASH_WRITE(0x555, 0x56);
+		_FLASH_WRITE(address, 0x30);
+		while (1)
+		{
+			__asm("nop");
+			if ((*((vu16 *)(AGB_ROM + address))) == 0xFFFF)
+			{
+				break;
+			}
+		}
+		_FLASH_WRITE(address, 0xF0);
 	}
 
 	REG_IE = ie;
@@ -190,6 +224,33 @@ IWRAM_CODE void FlashWriteData(u32 address, u32 length)
 			}
 		}
 		_FLASH_WRITE(address, 0xF0F0);
+	}
+	else if (_flash_type == 3)
+	{
+		for (int j = 0; j < (int)(length / 0x40); j++)
+		{
+			_FLASH_WRITE(0xAAA, 0xA9);
+			_FLASH_WRITE(0x555, 0x56);
+			_FLASH_WRITE(address + (j * 0x40), 0x26);
+			_FLASH_WRITE(address + (j * 0x40), 0x1F);
+			u16 data = 0;
+			for (int i = 0; i < 0x40; i += 2)
+			{
+				__asm("nop");
+				data = data_buffer[(j * 0x40) + i + 1] << 8 | data_buffer[(j * 0x40) + i];
+				_FLASH_WRITE(address + (j * 0x40) + i, data);
+			}
+			_FLASH_WRITE(address + (j * 0x40), 0x2A);
+			while (1)
+			{
+				__asm("nop");
+				if (p_rom[(j * 0x20) + 0x1F] == data)
+				{
+					break;
+				}
+			}
+		}
+		_FLASH_WRITE(address, 0xF0);
 	}
 
 	REG_IE = ie;

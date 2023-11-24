@@ -5,7 +5,7 @@
 import sys, os, glob, json, math, re, struct, hashlib, argparse, datetime
 
 # Configuration
-app_version = "0.7"
+app_version = "0.8"
 default_file = "LK_MULTIMENU_<CODE>.gba"
 
 ################################
@@ -49,6 +49,12 @@ cartridge_types = [
 		"name":"6600M0U0BE",
 		"flash_size":0x10000000,
 		"sector_size":0x40000,
+		"block_size":0x80000,
+	},
+	{
+		"name":"MSP54LV100",
+		"flash_size":0x8000000,
+		"sector_size":0x20000,
 		"block_size":0x80000,
 	},
 ]

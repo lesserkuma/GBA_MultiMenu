@@ -20,8 +20,9 @@ The following section must be edited in order to specify the cartridge type to u
 },
 ```
 Set `type` to `1` or `2`:
-- `1` = MSP55LV100S (e.g. The Legend of Zelda Collection - Classic Edition 7-in-1)
-- `2` = 6600M0U0BE (e.g. 369IN1 2048M)
+- `1` = MSP55LV100S (e.g. The Legend of Zelda Collection - Classic Edition 7-in-1, 64 MiB)
+- `2` = 6600M0U0BE (e.g. 369IN1 2048M, 256 MiB)
+- `3` = MSP54LV100 (e.g. The Legend of Zelda Collection - Classic Edition 7-in-1, 128 MiB)
 
 Set `battery_present` to `true` or `false`. This will enable enhanced save data handling which will only be functional with a working battery.
 
@@ -76,13 +77,14 @@ If the cartridge has no battery installed, the ROMs must be patched for batteryl
 
 ## Compatibility
 Tested repro cartridges:
-- 100BS6600_48BALL_V4 with 6600M0U0BE
 - 100SOP with MSP55LV100S
+- 100BS6600_48BALL_V4 with 6600M0U0BE
+- SUN100S_MSP54_XXX_BGA48 with MSP54LV100
 
 The generated compilation ROM can be written and read using a [GBxCart RW v1.4+](https://www.gbxcart.com/) device by insideGadgets and the [FlashGBX](https://github.com/lesserkuma/FlashGBX) software.
 
 ## Thanks
-Thanks to FraX, Ausar, liuyunx, BennVenn
+Thanks to FraX, Ausar, liuyunx, BennVenn, Jenetrix
 
 ## Screenshots
 

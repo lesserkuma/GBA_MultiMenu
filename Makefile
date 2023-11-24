@@ -183,7 +183,9 @@ $(shell touch $(CURDIR)/../$(SOURCES)/version.h)
 %.gba: %.elf
 	@$(OBJCOPY) -O binary $< $@
 	@gbafix $@ "-tLK MULTIMENU" "-cAGBJ" "-mLK" "-r0"
+	@echo Copying to ROM builder folder
 	@cp $@ "$(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))/rom_builder/lk_multimenu.gba"
+	@echo Done!
 
 #---------------------------------------------------------------------------------------
 endif
