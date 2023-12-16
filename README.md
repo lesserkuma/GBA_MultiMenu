@@ -75,6 +75,8 @@ If the cartridge has a battery installed, the ROMs must be SRAM-patched with [GB
 
 If the cartridge has no battery installed, the ROMs must be patched for batteryless SRAM saving with maniac's [Automatic batteryless saving patcher](https://github.com/metroid-maniac/gba-auto-batteryless-patcher/).
 
+On battery-equipped cartridges, when starting a game from the menu, the previously played game's save data will be read from SRAM and stored to permanent flash memory. To skip this, you can hold the SELECT button while starting the game.
+
 ## Compatibility
 Tested repro cartridges:
 - 100SOP with MSP55LV100S

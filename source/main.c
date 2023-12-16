@@ -233,12 +233,14 @@ int main(void) {
 				sFlashStatus.last_boot_menu_index = page_active * 8 + cursor_pos;
 				if (!show_credits && !show_debug) {
 					LoadFont(0);
-					if (sFlashStatus.battery_present == 1) {
-						DrawText(5, SCREEN_HEIGHT - sFontSpecs.max_height - 3 - FontMarginBottom, ALIGN_LEFT, u"Loading… Don't turn off the power!", 48, font, (void*)AGB_VRAM+0xA000, FALSE);
-					}
+					DrawText(5, SCREEN_HEIGHT - sFontSpecs.max_height - 3 - FontMarginBottom, ALIGN_LEFT, u"Loading… Don't turn off the power!", 48, font, (void*)AGB_VRAM+0xA000, FALSE);
 					REG_DISPCNT ^= 0x0010;
 					dmaCopy((void*)AGB_VRAM+0xA000, (void*)AGB_VRAM, SCREEN_WIDTH * SCREEN_HEIGHT);
 					REG_DISPCNT ^= 0x0010;
+				}
+				if (kHeld & KEY_SELECT) {
+					// Skips reading latest save data from SRAM
+					sFlashStatus.last_boot_save_type = SRAM_NONE;
 				}
 				u8 error_code = BootGame(sItemConfig, sFlashStatus);
 				boot_failed = error_code;

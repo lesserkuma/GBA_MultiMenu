@@ -301,15 +301,15 @@ IWRAM_CODE u8 BootGame(ItemConfig config, FlashStatus status)
 			FlashEraseSector((_flash_save_block_offset + status.last_boot_save_index) * _flash_sector_size);
 			FlashWriteData((_flash_save_block_offset + status.last_boot_save_index) * _flash_sector_size, SRAM_SIZE);
 		}
-
-		// Save status to flash
-		status.last_boot_save_index = config.save_index;
-		status.last_boot_save_type = config.save_type;
-		memset((void *)data_buffer, 0, 0x1000);
-		memcpy(data_buffer, &status, sizeof(status));
-		FlashEraseSector(_flash_status_block_offset * flash_sector_size);
-		FlashWriteData(_flash_status_block_offset * flash_sector_size, 0x1000);
 	}
+
+	// Save status to flash
+	status.last_boot_save_index = config.save_index;
+	status.last_boot_save_type = config.save_type;
+	memset((void *)data_buffer, 0, 0x1000);
+	memcpy(data_buffer, &status, sizeof(status));
+	FlashEraseSector(_flash_status_block_offset * flash_sector_size);
+	FlashWriteData(_flash_status_block_offset * flash_sector_size, 0x1000);
 
 	// Disable SRAM access
 	*(vu8 *)MAPPER_CONFIG4 = 0;
