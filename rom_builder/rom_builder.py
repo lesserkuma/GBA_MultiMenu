@@ -5,7 +5,7 @@
 import sys, os, glob, json, math, re, struct, hashlib, argparse, datetime
 
 # Configuration
-app_version = "0.8"
+app_version = "0.9"
 default_file = "LK_MULTIMENU_<CODE>.gba"
 
 ################################
