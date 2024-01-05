@@ -60,6 +60,7 @@ int main(void) {
 	u8 redraw_items = 0xFF;
 	u8 roms_page = 7;
 	u16 kHeld = 0;
+	u16 kHeld_boot = 0;
 	BOOL show_debug = FALSE;
 	BOOL show_credits = FALSE;
 	BOOL boot_failed = FALSE;
@@ -90,21 +91,32 @@ int main(void) {
 	SetMode(MODE_4 | BG2_ENABLE);
 	dmaCopy(bgBitmap, (void*)AGB_VRAM+0xA000, SCREEN_WIDTH * SCREEN_HEIGHT);
 	
-	// Count number of ROMs
-	for (roms_total = 0; roms_total < 512; roms_total++) {
-		if ((itemlist[(0x70*roms_total+1)] == 0) || (itemlist[(0x70*roms_total+1)] == 0xFF)) break;
+	// Check on-boot keys
+	scanKeys();
+	kHeld = keysHeld();
+	kHeld_boot = kHeld;
+	if ((kHeld & KEY_SELECT) && (kHeld & KEY_R)) {
+		show_credits = TRUE;
+	} else if (kHeld & KEY_SELECT) {
+		show_debug = TRUE;
 	}
-	if (roms_total == 0) {
-		LoadFont(2);
-		DrawText(0, 64, ALIGN_CENTER, u"Please use the ROM Builder to", 48, font, (void*)AGB_VRAM+0xA000, FALSE);
-		DrawText(0, 64 + sFontSpecs.max_height, ALIGN_CENTER, u"create your own compilation.", 48, font, (void*)AGB_VRAM+0xA000, FALSE);
-		LoadFont(0);
-		DrawText(0, 127, ALIGN_CENTER, u"https://github.com/lesserkuma/GBA_MultiMenu", 48, font, (void*)AGB_VRAM+0xA000, FALSE);
-		DrawText(14, SCREEN_HEIGHT - sFontSpecs.max_height - 3 - FontMarginBottom, ALIGN_RIGHT, u"No ROMs", 10, font, (void*)AGB_VRAM+0xA000, FALSE);
-		REG_DISPCNT ^= 0x0010;
-		while (1) { VBlankIntrWait(); }
+	if (kHeld) {
+		u16 itemlist_offset = 0;
+		BOOL found_keys = FALSE;
+		for (itemlist_offset = 0; itemlist_offset < 0x924; itemlist_offset += 0x70) {
+			memcpy(&sItemConfig, ((u8*)itemlist)+itemlist_offset, sizeof(sItemConfig));
+			if (sItemConfig.title_length == 0) break;
+			if (sItemConfig.title_length == 0xFF) break;
+			if (sItemConfig.keys == kHeld) {
+				itemlist += itemlist_offset;
+				found_keys = TRUE;
+				break;
+			}
+		}
+		if (!found_keys) {
+			kHeld = 0;
+		}
 	}
-	page_total = (roms_total + 8.0 - 1) / 8.0;
 
 	memcpy(&sFlashStatus, (void *)(AGB_ROM + flash_status_sector_offset * flash_sector_size), sizeof(sFlashStatus));
 	if ((sFlashStatus.magic != MAGIC_FLASH_STATUS) || (sFlashStatus.last_boot_menu_index >= roms_total)) {
@@ -119,15 +131,29 @@ int main(void) {
 		page_active = sFlashStatus.last_boot_menu_index / 8;
 	}
 
-	// Check on-boot keys
-	scanKeys();
-	kHeld = keysHeld();
-	if ((kHeld & KEY_SELECT) && (kHeld & KEY_R)) {
-		show_credits = TRUE;
-	} else if (kHeld & KEY_SELECT) {
-		show_debug = TRUE;
+	// Count number of ROMs
+	for (roms_total = 0; roms_total < 512; roms_total++) {
+		memcpy(&sItemConfig, ((u8*)itemlist)+(0x70*roms_total), sizeof(sItemConfig));
+		if (sItemConfig.keys != kHeld) break;
+		if (sItemConfig.title_length == 0) break;
+		if (sItemConfig.title_length == 0xFF) break;
 	}
-	
+	if (roms_total == 0) {
+		LoadFont(2);
+		DrawText(0, 64, ALIGN_CENTER, u"Please use the ROM Builder to", 48, font, (void*)AGB_VRAM+0xA000, FALSE);
+		DrawText(0, 64 + sFontSpecs.max_height, ALIGN_CENTER, u"create your own compilation.", 48, font, (void*)AGB_VRAM+0xA000, FALSE);
+		LoadFont(0);
+		DrawText(0, 127, ALIGN_CENTER, u"https://github.com/lesserkuma/GBA_MultiMenu", 48, font, (void*)AGB_VRAM+0xA000, FALSE);
+		DrawText(14, SCREEN_HEIGHT - sFontSpecs.max_height - 3 - FontMarginBottom, ALIGN_RIGHT, u"No ROMs", 10, font, (void*)AGB_VRAM+0xA000, FALSE);
+		REG_DISPCNT ^= 0x0010;
+		while (1) { VBlankIntrWait(); }
+	} else if (roms_total == 1) {
+		memcpy(&sItemConfig, ((u8*)itemlist), sizeof(sItemConfig));
+		u8 error_code = BootGame(sItemConfig, sFlashStatus);
+		boot_failed = error_code;
+	}
+	page_total = (roms_total + 8.0 - 1) / 8.0;
+
 	s32 wait = 0;
 	u8 f = 0;
 	while (1) {
@@ -212,6 +238,11 @@ int main(void) {
 		// Check for menu keys
 		scanKeys();
 		kHeld = keysHeld();
+		if ((kHeld_boot == 0) || (kHeld != kHeld_boot)) {
+			kHeld_boot = 0;
+		} else {
+			kHeld = 0;
+		}
 		if (kHeld != 0) {
 			wait++;
 		} else {

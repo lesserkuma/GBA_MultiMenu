@@ -5,7 +5,7 @@
 import sys, os, glob, json, math, re, struct, hashlib, argparse, datetime
 
 # Configuration
-app_version = "0.9"
+app_version = "0.10"
 default_file = "LK_MULTIMENU_<CODE>.gba"
 
 ################################
@@ -145,6 +145,7 @@ block_size = cartridge_types[cartridge_type]["block_size"]
 block_count = flash_size // block_size
 sectors_per_block = 0x80000 // sector_size
 compilation = bytearray()
+roms_keys = [0]
 for i in range(flash_size // 0x2000000):
 	chunk = bytearray([0xFF] * 0x2000000)
 	compilation += chunk
@@ -198,7 +199,36 @@ for game in games:
 	else:
 		game["title_font"] = 0
 	game["sector_count"] = int(size / sector_size)
-
+	
+	# Hidden ROMs
+	keys = 0
+	if "keys" in game:
+		for key in game["keys"]:
+			if key.upper() == "A":
+				keys |= (1 << 0)
+			elif key.upper() == "B":
+				keys |= (1 << 1)
+			elif key.upper() == "SELECT":
+				keys |= (1 << 2)
+			elif key.upper() == "START":
+				keys |= (1 << 3)
+			elif key.upper() == "RIGHT":
+				keys |= (1 << 4)
+			elif key.upper() == "LEFT":
+				keys |= (1 << 5)
+			elif key.upper() == "UP":
+				keys |= (1 << 6)
+			elif key.upper() == "DOWN":
+				keys |= (1 << 7)
+			elif key.upper() == "R":
+				keys |= (1 << 8)
+			elif key.upper() == "L":
+				keys |= (1 << 9)
+	game["keys"] = keys
+	if keys > 0:
+		roms_keys.append(keys)
+		roms_keys = list(set(roms_keys))
+	
 	if battery_present and game["save_slot"] is not None:
 		game["save_type"] = 2
 		game["save_slot"] -= 1
@@ -240,7 +270,6 @@ for game in games:
 
 # Read ROM data
 games.sort(key=lambda game: game["size"], reverse=True)
-c = 0
 for game in games:
 	found = False
 	for i in range(save_end_offset, len(sector_map)):
@@ -291,33 +320,39 @@ else:
 	toc_sep = "----+-----------+-----------+--------------------------------------------------"
 
 item_list = bytearray()
-for game in games:
-	title = game["title"]
-	if len(title) > 0x30: title = title[:0x2F] + "…"
 
-	table_line = \
-				f"{game['index'] + 1:3d} | " \
-				f"0x{game['block_offset'] * block_size:07X} | "\
-				f"0x{game['block_count'] * block_size:07X} | "
-	if battery_present:
-		if game['save_type'] > 0:
-			table_line += f"{game['save_slot']+1:2d} (0x{(save_data_sector_offset + game['save_slot']) * sector_size:07X}) | "
-		else:
-			table_line += "               | "
-	table_line += f"{title}"
-	if c % 8 == 0: logp(toc_sep)
-	logp(table_line)
-	c += 1
-	
-	title = title.ljust(0x30, "\0")
-	item_list += bytearray(struct.pack("B", game["title_font"]))
-	item_list += bytearray(struct.pack("B", len(game["title"])))
-	item_list += bytearray(struct.pack("<H", game["block_offset"]))
-	item_list += bytearray(struct.pack("<H", game["block_count"]))
-	item_list += bytearray(struct.pack("B", game["save_type"]))
-	item_list += bytearray(struct.pack("B", game["save_slot"]))
-	item_list += bytearray([0] * 8)
-	item_list += bytearray(title.encode("UTF-16LE"))
+for key in roms_keys:
+	c = 0
+	for game in games:
+		if game["keys"] != key: continue
+		
+		title = game["title"]
+		if len(title) > 0x30: title = title[:0x2F] + "…"
+
+		table_line = \
+					f"{game['index'] + 1:3d} | " \
+					f"0x{game['block_offset'] * block_size:07X} | "\
+					f"0x{game['block_count'] * block_size:07X} | "
+		if battery_present:
+			if game['save_type'] > 0:
+				table_line += f"{game['save_slot']+1:2d} (0x{(save_data_sector_offset + game['save_slot']) * sector_size:07X}) | "
+			else:
+				table_line += "               | "
+		table_line += f"{title}"
+		if c % 8 == 0: logp(toc_sep)
+		logp(table_line)
+		c += 1
+		
+		title = title.ljust(0x30, "\0")
+		item_list += bytearray(struct.pack("B", game["title_font"]))
+		item_list += bytearray(struct.pack("B", len(game["title"])))
+		item_list += bytearray(struct.pack("<H", game["block_offset"]))
+		item_list += bytearray(struct.pack("<H", game["block_count"]))
+		item_list += bytearray(struct.pack("B", game["save_type"]))
+		item_list += bytearray(struct.pack("B", game["save_slot"]))
+		item_list += bytearray(struct.pack("<H", game["keys"]))
+		item_list += bytearray([0] * 6)
+		item_list += bytearray(title.encode("UTF-16LE"))
 
 compilation[item_list_offset * sector_size:item_list_offset * sector_size + len(item_list)] = item_list
 rom_code = "L{:s}".format(hashlib.sha1(status + item_list).hexdigest()[:3]).upper()

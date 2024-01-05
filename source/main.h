@@ -66,7 +66,7 @@ typedef struct ItemConfig_
 	u16 rom_size;
 	SAVE_TYPE save_type;
 	u8 save_index;
-	u16 index;
+	u16 keys;
 	u8 reserved[6];
 	u16 title[0x30];
 } ItemConfig;
