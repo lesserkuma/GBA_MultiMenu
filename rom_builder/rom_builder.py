@@ -5,7 +5,7 @@
 import sys, os, glob, json, math, re, struct, hashlib, argparse, datetime
 
 # Configuration
-app_version = "0.10"
+app_version = "0.11"
 default_file = "LK_MULTIMENU_<CODE>.gba"
 
 ################################
@@ -225,6 +225,7 @@ for game in games:
 			elif key.upper() == "L":
 				keys |= (1 << 9)
 	game["keys"] = keys
+	
 	if keys > 0:
 		roms_keys.append(keys)
 		roms_keys = list(set(roms_keys))
@@ -328,7 +329,7 @@ for key in roms_keys:
 		
 		title = game["title"]
 		if len(title) > 0x30: title = title[:0x2F] + "…"
-
+		
 		table_line = \
 					f"{game['index'] + 1:3d} | " \
 					f"0x{game['block_offset'] * block_size:07X} | "\
@@ -339,7 +340,12 @@ for key in roms_keys:
 			else:
 				table_line += "               | "
 		table_line += f"{title}"
-		if c % 8 == 0: logp(toc_sep)
+		if c % 8 == 0:
+			if game['keys'] != 0:
+				temp = toc_sep[:-9] + "[Hidden]-"
+				logp(temp)
+			else:
+				logp(toc_sep)
 		logp(table_line)
 		c += 1
 		

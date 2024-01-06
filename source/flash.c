@@ -12,6 +12,7 @@ Author: Lesserkuma (github.com/lesserkuma)
 
 u8 flash_type;
 u8 *itemlist;
+u16 itemlist_offset;
 u32 flash_sector_size;
 u32 flash_itemlist_sector_offset;
 u32 flash_status_sector_offset;

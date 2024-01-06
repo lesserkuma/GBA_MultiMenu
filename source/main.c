@@ -27,6 +27,7 @@ extern s8 FontMarginBottom;
 extern const u8* font;
 extern u8 *itemlist;
 extern u8 flash_type;
+extern u16 itemlist_offset;
 extern u32 flash_sector_size;
 extern u32 flash_itemlist_sector_offset;
 extern u32 flash_status_sector_offset;
@@ -101,20 +102,19 @@ int main(void) {
 		show_debug = TRUE;
 	}
 	if (kHeld) {
-		u16 itemlist_offset = 0;
 		BOOL found_keys = FALSE;
-		for (itemlist_offset = 0; itemlist_offset < 0x924; itemlist_offset += 0x70) {
+		for (itemlist_offset = 0; itemlist_offset < 0xE000; itemlist_offset += 0x70) {
 			memcpy(&sItemConfig, ((u8*)itemlist)+itemlist_offset, sizeof(sItemConfig));
 			if (sItemConfig.title_length == 0) break;
 			if (sItemConfig.title_length == 0xFF) break;
 			if (sItemConfig.keys == kHeld) {
-				itemlist += itemlist_offset;
 				found_keys = TRUE;
 				break;
 			}
 		}
 		if (!found_keys) {
 			kHeld = 0;
+			itemlist_offset = 0;
 		}
 	}
 
@@ -133,7 +133,7 @@ int main(void) {
 
 	// Count number of ROMs
 	for (roms_total = 0; roms_total < 512; roms_total++) {
-		memcpy(&sItemConfig, ((u8*)itemlist)+(0x70*roms_total), sizeof(sItemConfig));
+		memcpy(&sItemConfig, ((u8*)itemlist+itemlist_offset)+(0x70*roms_total), sizeof(sItemConfig));
 		if (sItemConfig.keys != kHeld) break;
 		if (sItemConfig.title_length == 0) break;
 		if (sItemConfig.title_length == 0xFF) break;
@@ -148,7 +148,7 @@ int main(void) {
 		REG_DISPCNT ^= 0x0010;
 		while (1) { VBlankIntrWait(); }
 	} else if (roms_total == 1) {
-		memcpy(&sItemConfig, ((u8*)itemlist), sizeof(sItemConfig));
+		memcpy(&sItemConfig, ((u8*)itemlist+itemlist_offset), sizeof(sItemConfig));
 		u8 error_code = BootGame(sItemConfig, sFlashStatus);
 		boot_failed = error_code;
 	}
@@ -169,9 +169,8 @@ int main(void) {
 				}
 				if (roms_page < 7) ClearList((void*)AGB_VRAM+0xA000, 26+(roms_page+1)*14, 14*(8-roms_page));
 				if (cursor_pos > roms_page) cursor_pos = roms_page;
-				
 				for (u8 i = 0; i <= roms_page; i++) {
-					memcpy(&sItemConfig, ((u8*)itemlist)+0x70*(page_active*8+i), sizeof(sItemConfig));
+					memcpy(&sItemConfig, ((u8*)itemlist+itemlist_offset)+0x70*(page_active*8+i), sizeof(sItemConfig));
 					ClearList((void*)AGB_VRAM+0xA000, 27+i*14, 14);
 					LoadFont(sItemConfig.font);
 					DrawText(28, 26+i*14, ALIGN_LEFT, sItemConfig.title, sItemConfig.title_length, font, (void*)AGB_VRAM+0xA000, i == cursor_pos);
@@ -180,7 +179,7 @@ int main(void) {
 				// Re-draw only changed list items (cursor moved up or down)
 				for (u8 i = 0; i < 8; i++) {
 					if ((redraw_items >> i) & 1) {
-						memcpy(&sItemConfig, ((u8*)itemlist)+0x70*(page_active*8+i), sizeof(sItemConfig));
+						memcpy(&sItemConfig, ((u8*)itemlist+itemlist_offset)+0x70*(page_active*8+i), sizeof(sItemConfig));
 						ClearList((void*)AGB_VRAM+0xA000, 27+i*14, 14);
 						LoadFont(sItemConfig.font);
 						DrawText(28, 26+i*14, ALIGN_LEFT, sItemConfig.title, sItemConfig.title_length, font, (void*)AGB_VRAM+0xA000, i == cursor_pos);
@@ -188,7 +187,7 @@ int main(void) {
 				}
 			}
 			
-			memcpy(&sItemConfig, ((u8*)itemlist)+0x70*(page_active*8+cursor_pos), sizeof(sItemConfig));
+			memcpy(&sItemConfig, ((u8*)itemlist+itemlist_offset)+0x70*(page_active*8+cursor_pos), sizeof(sItemConfig));
 			
 			// Draw cursor
 			LoadFont(1);
