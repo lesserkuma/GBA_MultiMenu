@@ -5,7 +5,7 @@
 import sys, os, glob, json, math, re, struct, hashlib, argparse, datetime
 
 # Configuration
-app_version = "0.11"
+app_version = "1.0"
 default_file = "LK_MULTIMENU_<CODE>.gba"
 
 ################################
@@ -13,7 +13,6 @@ default_file = "LK_MULTIMENU_<CODE>.gba"
 def UpdateSectorMap(start, length, c):
 	sector_map[start + 1:start + length] = c * (length - 1)
 	sector_map[start] = c.upper()
-
 
 def formatFileSize(size):
 	if size == 1:
@@ -57,6 +56,12 @@ cartridge_types = [
 		"sector_size":0x20000,
 		"block_size":0x80000,
 	},
+	{
+		"name":"F0095H0",
+		"flash_size":0x20000000,
+		"sector_size":0x40000,
+		"block_size":0x80000,
+	},
 ]
 now = datetime.datetime.now()
 log = ""
@@ -68,6 +73,7 @@ parser.add_argument("--split", help="splits output files into 32 MiB parts", act
 parser.add_argument("--no-wait", help="don’t wait for user input when finished", action="store_true", default=False)
 parser.add_argument("--no-log", help="don’t write a log file", action="store_true", default=False)
 parser.add_argument("--config", type=str, default="config.json", help="sets the config file to use")
+parser.add_argument("--bg", type=str, help="sets the background image to use")
 parser.add_argument("--output", type=str, default=default_file, help="sets the file name of the compilation ROM")
 args = parser.parse_args()
 output_file = args.output
@@ -153,7 +159,36 @@ sector_map = list("." * sector_count)
 
 # Read menu ROM
 with open("lk_multimenu.gba", "rb") as f:
-	menu_rom = f.read()
+	menu_rom = bytearray(f.read())
+	menu_rom += bytearray([0xFF] * ((len(menu_rom) + 0x10 - (len(menu_rom) % 0x10)) - len(menu_rom)))
+	menu_rom += bytearray([0xFF] * 0x20)
+	build_timestamp_offset = len(menu_rom) - 0x20
+	build_timestamp = datetime.datetime.now().astimezone().replace(microsecond=0).isoformat().encode("ASCII")
+	menu_rom[build_timestamp_offset:build_timestamp_offset+len(build_timestamp)] = build_timestamp
+
+# Change background image
+if args.bg or os.path.exists("bg.png"):
+	try:
+		from PIL import Image
+		if args.bg:
+			img = Image.open(args.bg)
+		else:
+			img = Image.open("bg.png")
+		img = img.convert('P')
+		palette = img.getpalette()
+		palette_rgb555 = [((b >> 3) << 10) | ((g >> 3) << 5) | (r >> 3) for r, g, b in zip(palette[::3], palette[1::3], palette[2::3])]
+		raw_bitmap = bytearray(list(img.tobytes()))
+		raw_palette = bytearray(0x200)
+		pos = 0
+		for color in palette_rgb555:
+			raw_palette[pos:pos+2] = struct.pack("<H", color)
+			pos += 2
+		menu_rom_bg_offset = menu_rom.find(b"RTFN\xFF\xFE") - 0x9800
+		menu_rom[menu_rom_bg_offset:menu_rom_bg_offset+0x9600] = raw_bitmap
+		menu_rom[menu_rom_bg_offset+0x9600:menu_rom_bg_offset+0x9800] = raw_palette
+	except ImportError:
+		print("Error: Couldn’t update background image. Pillow library is not installed.")
+
 menu_rom_size = menu_rom.find(b"dkARM\0\0\0") + 8
 compilation[0:len(menu_rom)] = menu_rom
 UpdateSectorMap(start=0, length=math.ceil(len(menu_rom) / sector_size), c="m")
@@ -314,11 +349,11 @@ logp("{:.2f}% ({:d} of {:d} sectors) used\n".format(sectors_used / sector_count 
 logp(f"Added {len(games)} ROM(s) to the compilation\n")
 
 if battery_present:
-	logp     ("    | Offset    | Map Size  | Save Slot      | Title")
-	toc_sep = "----+-----------+-----------+----------------+---------------------------------"
+	logp     ("    | Offset     | Map Size  | Save Slot      | Title")
+	toc_sep = "----+------------+-----------+----------------+--------------------------------"
 else:
-	logp     ("    | Offset    | Map Size  | Title")
-	toc_sep = "----+-----------+-----------+--------------------------------------------------"
+	logp     ("    | Offset     | Map Size  | Title")
+	toc_sep = "----+------------+-----------+-------------------------------------------------"
 
 item_list = bytearray()
 
@@ -331,9 +366,9 @@ for key in roms_keys:
 		if len(title) > 0x30: title = title[:0x2F] + "…"
 		
 		table_line = \
-					f"{game['index'] + 1:3d} | " \
-					f"0x{game['block_offset'] * block_size:07X} | "\
-					f"0x{game['block_count'] * block_size:07X} | "
+					f"{game['index'] + 1:3d} | " + \
+					f"0x{game['block_offset'] * block_size:X} | ".rjust(13, " ") + \
+					f"0x{game['block_count'] * block_size:X} | ".rjust(12, " ")
 		if battery_present:
 			if game['save_type'] > 0:
 				table_line += f"{game['save_slot']+1:2d} (0x{(save_data_sector_offset + game['save_slot']) * sector_size:07X}) | "
@@ -372,14 +407,15 @@ for i in range(0xA0, 0xBD):
 checksum = (checksum - 0x19) & 0xFF
 compilation[0xBD] = checksum
 logp("")
-logp("Menu ROM:        0x{:07X}–0x{:07X}".format(0, len(menu_rom)))
-logp("Game List:       0x{:07X}–0x{:07X}".format(item_list_offset * sector_size, item_list_offset * sector_size + len(item_list)))
-logp("Status Area:     0x{:07X}–0x{:07X}".format(status_offset * sector_size, status_offset * sector_size + 0x1000))
+logp("Menu ROM:        0x{:08X}–0x{:08X}".format(0, len(menu_rom)))
+logp("Game List:       0x{:08X}–0x{:08X}".format(item_list_offset * sector_size, item_list_offset * sector_size + len(item_list)))
+logp("Status Area:     0x{:08X}–0x{:08X}".format(status_offset * sector_size, status_offset * sector_size + 0x1000))
 logp("")
 logp("Cartridge Type:  {:d} ({:s}) {:s}".format(cartridge_type + 1, cartridge_types[cartridge_type]["name"], "with battery" if battery_present else "without battery"))
 logp("Output ROM Size: {:.2f} MiB".format(rom_size / 1024 / 1024))
 logp("Output ROM Code: {:s}".format(rom_code))
 output_file = output_file.replace("<CODE>", rom_code)
+
 if args.split:
 	for i in range(0, math.ceil(flash_size / 0x2000000)):
 		pos = i * 0x2000000

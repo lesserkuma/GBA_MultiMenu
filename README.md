@@ -23,6 +23,7 @@ Set `type` to `1` or `2`:
 - `1` = MSP55LV100S (e.g. The Legend of Zelda Collection - Classic Edition 7-in-1, 64 MiB)
 - `2` = 6600M0U0BE (e.g. 369IN1 2048M, 256 MiB)
 - `3` = MSP54LV100 (e.g. The Legend of Zelda Collection - Classic Edition 7-in-1, 128 MiB)
+- `4` = F0095H0 (e.g. 53 in one 4G, 512 MiB)
 
 Set `battery_present` to `true` or `false`. This will enable enhanced save data handling which will only be functional with a working battery.
 
@@ -62,6 +63,7 @@ No command line arguments are required for creating a compilation, however there
 --no-wait               don't wait for user input when finished
 --no-log                don't write a log file
 --config config.json    sets the config file to use
+--bg bg.png             sets the background image to use
 --output output.gba     sets the file name of the compilation ROM
 ```
 
@@ -83,6 +85,7 @@ Tested repro cartridges:
 - 100SOP with MSP55LV100S
 - 100BS6600_48BALL_V4 with 6600M0U0BE
 - SUN100S_MSP54_XXX_BGA48 with MSP54LV100
+- F0095_4G_V1 with F0095H0
 
 The generated compilation ROM can be written and read using a [GBxCart RW v1.4+](https://www.gbxcart.com/) device by insideGadgets and the [FlashGBX](https://github.com/lesserkuma/FlashGBX) software.
 
