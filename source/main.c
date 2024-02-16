@@ -118,19 +118,6 @@ int main(void) {
 		}
 	}
 
-	memcpy(&sFlashStatus, (void *)(AGB_ROM + flash_status_sector_offset * flash_sector_size), sizeof(sFlashStatus));
-	if ((sFlashStatus.magic != MAGIC_FLASH_STATUS) || (sFlashStatus.last_boot_menu_index >= roms_total)) {
-		sFlashStatus.magic = MAGIC_FLASH_STATUS;
-		sFlashStatus.version = 0;
-		sFlashStatus.battery_present = 1;
-		sFlashStatus.last_boot_menu_index = 0xFFFF;
-		sFlashStatus.last_boot_save_index = 0xFF;
-		sFlashStatus.last_boot_save_type = SRAM_NONE;
-	} else {
-		cursor_pos = sFlashStatus.last_boot_menu_index % 8;
-		page_active = sFlashStatus.last_boot_menu_index / 8;
-	}
-
 	// Count number of ROMs
 	for (roms_total = 0; roms_total < 512; roms_total++) {
 		memcpy(&sItemConfig, ((u8*)itemlist+itemlist_offset)+(0x70*roms_total), sizeof(sItemConfig));
@@ -153,6 +140,19 @@ int main(void) {
 		boot_failed = error_code;
 	}
 	page_total = (roms_total + 8.0 - 1) / 8.0;
+
+	memcpy(&sFlashStatus, (void *)(AGB_ROM + flash_status_sector_offset * flash_sector_size), sizeof(sFlashStatus));
+	if ((sFlashStatus.magic != MAGIC_FLASH_STATUS) || (sFlashStatus.last_boot_menu_index >= roms_total)) {
+		sFlashStatus.magic = MAGIC_FLASH_STATUS;
+		sFlashStatus.version = 0;
+		sFlashStatus.battery_present = 1;
+		sFlashStatus.last_boot_menu_index = 0xFFFF;
+		sFlashStatus.last_boot_save_index = 0xFF;
+		sFlashStatus.last_boot_save_type = SRAM_NONE;
+	} else {
+		cursor_pos = sFlashStatus.last_boot_menu_index % 8;
+		page_active = sFlashStatus.last_boot_menu_index / 8;
+	}
 
 	s32 wait = 0;
 	u8 f = 0;
@@ -188,7 +188,7 @@ int main(void) {
 			}
 			
 			memcpy(&sItemConfig, ((u8*)itemlist+itemlist_offset)+0x70*(page_active*8+cursor_pos), sizeof(sItemConfig));
-			
+
 			// Draw cursor
 			LoadFont(1);
 			ClearList((void*)AGB_VRAM+0xA000, SCREEN_HEIGHT - sFontSpecs.max_height - 1, sFontSpecs.max_height);
