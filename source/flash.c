@@ -400,12 +400,29 @@ IWRAM_CODE u8 BootGame(ItemConfig config, FlashStatus status)
 		*(vu8 *)MAPPER_CONFIG4 = sram_register_backup[3];
 	}
 
-	// Clear palette
-	for (int i = 0; i < SCREEN_WIDTH * SCREEN_HEIGHT >> 1; i++)
-	{
-		((vu16 *)AGB_VRAM)[i] = 0;
-	}
+	// clear VRAM like a fresh power-cycle for the game
+	REG_DISPCNT = 0x0080;
+	REG_BLDCNT = 0;
 	REG_BLDY = 0;
+	REG_DMA0CNT = 0; 
+	REG_DMA1CNT = 0; 
+	REG_DMA2CNT = 0; 
+	REG_DMA3CNT = 0;
+	REG_IF = 0xFFFF;
+
+	// VRAM (96 KB), palette (1 KB), OAM (1 KB)
+	for (int i = 0; i < 0x18000 >> 2; i++)
+	{
+		((vu32 *)AGB_VRAM)[i] = 0;
+	}
+	for (int i = 0; i < 0x400 >> 2; i++)
+	{
+		((vu32 *)AGB_PRAM)[i] = 0;
+	}
+	for (int i = 0; i < 0x400 >> 2; i++)
+	{
+		((vu32 *)0x7000000)[i] = 0;
+	}
 
 	// Boot ROM
 	__asm("swi 0"); // Soft reset
